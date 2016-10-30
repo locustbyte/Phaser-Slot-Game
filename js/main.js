@@ -1,4 +1,4 @@
-var game = new Phaser.Game(890, 580, Phaser.AUTO, 'frame', {
+var game = new Phaser.Game(1200, 768, Phaser.AUTO, '', {
     preload: preload,
     create: create,
     update: update
@@ -6,6 +6,13 @@ var game = new Phaser.Game(890, 580, Phaser.AUTO, 'frame', {
 
 var emitter;
 var bonusVideo;
+var spinButton;
+var mushroom;
+var pig;
+var pigArrives;
+var s;
+var video;
+var text;
 
 var assets = [
     'A',
@@ -23,12 +30,25 @@ var assets = [
 var gamefile = {
     "gamefile": {
         "bonusactivated": "true",
-        "Symbols": ["A","9","envelope","Dragon_StickyWild","j","Fan_Symbol","Panda_Scatter","q","q","k","99","Panda_Scatter","j","k","Panda_Scatter"
+        "Symbols": ["A","j","envelope","A","j","Fan_Symbol","Panda_Scatter","j","q","k","99","Panda_Scatter","j","k","Panda_Scatter"
         ]
     }
 }
 
-
+//  The different types of alignment this demo cycles through
+//  h = horizontal, v = vertical
+//  a = the text alignment (see comments below)
+var align = [ 
+    { h: 'left', v: 'top', a: 'left' },
+    { h: 'center', v: 'top', a: 'center' },
+    { h: 'right', v: 'top', a: 'right' },
+    { h: 'left', v: 'middle', a: 'left' },
+    { h: 'center', v: 'middle', a: 'center' },
+    { h: 'right', v: 'middle', a: 'right' },
+    { h: 'left', v: 'bottom', a: 'left' },
+    { h: 'center', v: 'bottom', a: 'center' },
+    { h: 'right', v: 'bottom', a: 'right' }
+];
 
 var jolly = 'parrot';
 
@@ -80,9 +100,8 @@ var Symbol = function(game, x, y, key, index) {
     this.scale.set(0.5);
     this.index = index;
     this.tweenY = this.y;
-    this.solidID = 1;
 
-    
+
 };
 
 Symbol.prototype = Object.create(Phaser.Sprite.prototype);
@@ -92,9 +111,10 @@ Symbol.prototype.update = function() {
     this.y = this.tweenY % 1500;
 
     var middle = 600;
-    var range = 130;
-    if (this.y < middle - range) this.alpha = 1.0 - (middle - range - this.y) * 0.005;
-    else if (this.y > middle + range) this.alpha = 1.0 - (this.y - middle - range) * 0.005;
+    var range = 100;
+    if (this.y < middle - range * 2) this.alpha = 0.1;
+    else if (this.y > middle + range * 2) this.alpha = 0.1;
+    else if (this.y > middle + range * 3) this.alpha = 0;
     else this.alpha = 1.0;
 };
 
@@ -115,7 +135,7 @@ Symbol.prototype.spin = function(rand) {
 
     var offset = 1700 + (this.index * 1800);
     target += offset + (rand * 150);
-    var mid = game.add.tween(this).to({ tweenY: target }, offset / 3, Phaser.Easing.Linear.InOut);
+    var mid = game.add.tween(this).to({ tweenY: target }, offset / 5, Phaser.Easing.Linear.InOut);
 
     target += 500;
     var end = game.add.tween(this).to({ tweenY: target }, 300, Phaser.Easing.Back.Out);
@@ -131,13 +151,13 @@ Symbol.prototype.spin = function(rand) {
 
     finalArray.push(this)
 
- 
+
     mid.onComplete.add(function() {
 
         setTimeout(function() {
             if (isFirst) {
 
-                
+
 
 
                 if (Math.floor(sym.y) >= 400 && Math.floor(sym.y) <= 500 && sym.index == 0) {
@@ -174,8 +194,8 @@ Symbol.prototype.spin = function(rand) {
 
             if (isNext2) {
 
-                
-             
+
+
                 if (Math.floor(sym.y) >= 400 && Math.floor(sym.y) <= 500 && sym.index == 2) {
                     sym.loadTexture(gamefile.gamefile.Symbols[6], 0)
                     sym.key = gamefile.gamefile.Symbols[6]
@@ -193,7 +213,7 @@ Symbol.prototype.spin = function(rand) {
 
             if (isNext3) {
 
-                
+
                 if (Math.floor(sym.y) >= 400 && Math.floor(sym.y) <= 500 && sym.index == 3) {
                     sym.loadTexture(gamefile.gamefile.Symbols[9], 0)
                     sym.key = gamefile.gamefile.Symbols[9]
@@ -211,7 +231,7 @@ Symbol.prototype.spin = function(rand) {
 
             if (isLast) {
 
-             
+
                 if (Math.floor(sym.y) >= 400 && Math.floor(sym.y) <= 500 && sym.index == 4) {
                     sym.loadTexture(gamefile.gamefile.Symbols[12], 0)
                     sym.key = gamefile.gamefile.Symbols[12]
@@ -243,7 +263,7 @@ Symbol.prototype.spin = function(rand) {
         reelStop.play();
 
 
-        
+
 
 
         if (isLast) {
@@ -258,7 +278,7 @@ Symbol.prototype.spin = function(rand) {
 
     start.chain(mid, end);
     start.start();
-    
+
 };
 
 // Reel class
@@ -278,7 +298,7 @@ var Reel = function(game, index) {
     }
 
     for (var i = 0; i < assets.length; i++) {
-        this.add(new Symbol(game, index * 168, i * 150, assets[i], index));
+        this.add(new Symbol(game, index * 150, i * 150, assets[i], index));
         // console.log(new Symbol(game, index*168, i*150, assets[i], index))
         finalArray.push(new Symbol(game, index * 168, i * 150, assets[i], index))
     }
@@ -287,7 +307,12 @@ var Reel = function(game, index) {
 Reel.prototype = Object.create(Phaser.Group.prototype);
 Reel.prototype.constructor = Reel;
 
+
+
+
+
 Reel.prototype.spin = function(rand) {
+    console.log(rand)
     this.forEach(function(symbol) {
 
         symbol.spin(rand);
@@ -343,6 +368,8 @@ Line.prototype.drawLines = function() {
     this.index = 0;
     this.lastPos = [];
     this.clear();
+    
+
 };
 
 Line.prototype.stopDrawing = function() {
@@ -403,12 +430,10 @@ Phaser.Filter.Glow.prototype.constructor = Phaser.Filter.Glow;
 // Main game functions
 
 function preload() {
-    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+    game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
 
-    for (var i = 0; i < assets.length; i++) {
-        game.load.image(assets[i], 'assets/' + assets[i] + '.png');
-    }
     game.load.image('button', 'assets/button_up.png');
+    game.load.image('fsBtn', 'assets/fullscreen.png', 94, 94);
     game.load.bitmapFont('kenfuture', 'assets/kenfuture.png', 'assets/kenfuture.fnt');
     game.load.audio('reelstop', 'assets/reelstop.wav');
     game.load.audio('music', 'assets/chopin.ogg');
@@ -434,18 +459,68 @@ function preload() {
     game.load.image('corona', 'assets/particles/blue.png');
 
 
-    game.load.video('space', 'assets/video/wormhole.mp4', 'canplaythrough', true);
+    
 
     game.load.image('space', 'assets/misc/starfield.png', 890, 580);
     game.load.image('logo', 'assets/sprites/phaser2.png');
-    
+
+    game.load.spritesheet('spinButton', 'assets/spin.png', 94, 94);
+    game.load.image('fullScreenButton', 'assets/fullscreen.png', 50, 50);
+
+    game.load.image('platform', 'assets/sprites/platform.png');
+
+    game.load.image('mainBK', 'assets/MainGameBackground.jpg');
+
+    //bonus
+    game.load.image('pic', 'assets/pics/thalion-rain.png');
+    game.load.video('space', 'assets/video/alpha-webm.webm');
+    game.load.bitmapFont('desyrel', 'assets/fonts/bitmapFonts/desyrel.png', 'assets/fonts/bitmapFonts/desyrel.xml');
+
 
 }
 
-function create() {
 
-    game.world.setBounds(0, 0, 800, 1500);
+function create() {
+    
+    
+    game.world.setBounds(-235, 0, 1200, 1100);
     game.camera.y = 380;
+
+
+    //main bkgnd
+    var mainBk = game.add.image(-235, 0, 'mainBK');
+    mainBk.x = -237;
+    mainBk.y = 330;
+    mainBk.height = game.height;
+    mainBk.width = game.width;
+
+    //  This only works in Chrome
+    //  No other browser supports webm files with alpha transparency (yet)
+
+    // var pic = game.add.image(-235, 0, 'pic');
+    // pic.x = -237;
+    // pic.y = 330;
+    // pic.height = game.height;
+    // pic.width = game.width;
+
+//    pic.scale.set(4);
+ //   pic.smoothed = false;
+
+    text = game.add.bitmapText(400, 300, 'desyrel', 'BONUS TIME\nYou Lucky Thing!', 64);
+    text.anchor.set(0.5);
+    text.align = 'center';
+
+    video = game.add.video('space');
+    video.x = -237;
+    video.y = 630;
+    video.height = game.height;
+    video.width = game.width;
+
+    video.play(true);
+
+    video.addToWorld(330, 700, 0.5, 0.5);
+
+
 
     reels = game.add.group();
     for (var i = 0; i < 5; i++) {
@@ -454,26 +529,40 @@ function create() {
     reels.x = 25;
 
     graphics = game.world.add(new Line(game));
+    
 
-    var button = game.add.button(690, 910, 'button', clickSpinButton);
-    button.alpha = 0.7;
-    var buttonText = game.add.bitmapText(765, 922, 'kenfuture', 'SPIN', 32);
-    buttonText.alpha = 0.8;
+    var winTextContainer    
+    winText = 'Wallet';
+    var style = { 
+        font: "16px Arial", fill: "#fff", 
+        align: "left", // the alignment of the text is independent of the bounds, try changing to 'center' or 'right'
+        boundsAlignH: "right", 
+        boundsAlignV: "top", 
+        wordWrap: true, wordWrapWidth: 300 
+    };
 
-    creditsText = game.add.bitmapText(25, 405, 'kenfuture', 'Balance: ' + credits, 32);
-    scoreText = game.add.bitmapText(25, 925, 'kenfuture', 'ReelNRG: 0', 32);
+    
+    winTextContainer = game.add.text(400, 0, winText, style);
+    
+
+    creditsText = game.add.bitmapText(-210, 350, 'kenfuture', 'BALANCE: ' + credits, 32);
+    scoreText = game.add.bitmapText(-210, 1055, 'kenfuture', 'WIN: 0', 32);
+    
+    
+
+
+    
 
     reelStop = game.add.audio('reelstop');
     music = game.add.audio('music');
     winning = game.add.audio('winning');
 
-    ckImage = game.add.image(100, 0, '1')
-
-    game.add.sprite(0, 0, 'einstein');
-
+    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+    
     
 
-    emitter = game.add.emitter(game.world.centerX, 1000, 200);
+
+    emitter = game.add.emitter(game.world.centerX, 600, 200);
 
     emitter.makeParticles('corona');
 
@@ -484,153 +573,208 @@ function create() {
 
     //  false means don't explode all the sprites at once, but instead release at a rate of one particle per 100ms
     //  The 5000 value is the lifespan of each particle before it's killed
-    
 
-    video = game.add.video('space');
 
-    //  game.add.tileSprite(1, 380, 890, 580, 'space');
+    // video = game.add.video('space');
 
-    // var sprite = game.add.sprite(game.world.centerX, game.world.centerY, 'logo');
-
-    // sprite.anchor.setTo(1, 1);
-    // sprite.alpha = 0;
-
-    // //  Create our tween. This will fade the sprite to alpha 1 over the duration of 2 seconds
-    // var tween = game.add.tween(sprite).to( { alpha: 1 }, 2000, "Linear", true, 0, -1);
-
-    // //  And this tells it to yoyo, i.e. fade back to zero again before repeating.
-    // //  The 3000 tells it to wait for 3 seconds before starting the fade back.
-    // tween.yoyo(true, 3000);
 
     
+    
+    //  Standard button (also used as our pointer tracker)
+    var fsBtn = game.add.button(873, 330, 'fsBtn', gofull);
+    fsBtn.alpha = 1;
+//    fsBtn.scale.setTo(0.1)
 
+    //spin button
+    spinButton = game.add.button(325, 910, 'spinButton', clickSpinButton, this, 2, 1, 0);
+    
+    
+    
+    spinButton.onInputOver.add(spinBtnHover, this);
+    spinButton.onInputOut.add(spinBtnOut, this);
+    spinButton.onInputUp.add(spinBtnUp, this);
+
+    game.stage.scale.pageAlignHorizontally = true;game.stage.scale.pageAlignVeritcally = true;
+
+
+    
+
+    
+
+    
+    game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
+
+
+}
+
+function firstTween() {
+
+    s = game.add.tween(mushroom.scale);
+    s.to({x: 2, y:2}, 1000, Phaser.Easing.Linear.None);
+    s.onComplete.addOnce(theEnd, this);
+    s.start();
+
+}
+
+function theEnd() {
+    
+    e = game.add.tween(pig);
+    
+    e.to({ x: -150 }, 1000, Phaser.Easing.Bounce.Out);
+    e.start();
+
+}
+
+function gofull() {
+
+    if (game.scale.isFullScreen)
+    {
+        game.scale.stopFullScreen();
+    }
+    else
+    {
+        game.scale.startFullScreen(false);
+    }
 
 }
 
 function update() {
+ 
+}
+
+function render () {
+    text.text = 'Phaser kicking\nAlpha Video Channels\n' + Math.round(video.progress * 100) + '%';
+    // game.debug.text('Click / Tap to go fullscreen', 270, 16);
+    // game.debug.text('Click / Tap to go fullscreen', 0, 16);
+
+    game.debug.inputInfo(32, 32);
+    // game.debug.pointer(game.input.activePointer);
+
 
 }
+
+
+function spinBtnUp() {
+    
+    //clickSpinButton()
+}
+
+function spinBtnHover() {
+    console.log('button over');
+}
+
+function spinBtnOut() {
+    console.log('button out');
+}
+
+function spinActionOnClick () {
+
+    alert('spin')
+
+}
+
+
 
 function clickSpinButton() {
     finalArray = []
     if (spinning || credits < 100) return;
-
+    
     spinning = true;
-
+    
     music.play();
     updateCredits(-100);
     graphics.stopDrawing();
-    scoreText.text = 'Winnings:';
-
+    scoreText.text = 'Win:';
+    
     reels.forEach(function(reel) {
         var rand = game.rnd.integerInRange(0, 9);
-
         reel.spin(rand);
     });
 }
 
 function checkResults() {
+
+    if( gamefile.gamefile.bonusactivated == 'true' ){
+        emitter.start(false, 5000, 100);
+    }
+
     var results = [];
     for (var i = 0; i < 3; i++)
         results[i] = [];
-
+    
     graphics.lines = [];
-
+    
     music.stop();
     var score = 0;
+    
     reels.forEach(function(reel) {
         reel.forEach(function(symbol) {
-            if (symbol.y == 450){
+            if (symbol.y == 450)
                 results[0][symbol.index] = symbol;
-                console.log( symbol.key  )
-                
-                // if( symbol.key  == 'scatter'){
-                //     console.log(symbol.key)
-                //     symbol.destroy();
-                // }
-                
-            }
-                
             else if (symbol.y == 600)
                 results[1][symbol.index] = symbol;
             else if (symbol.y == 750)
                 results[2][symbol.index] = symbol;
         });
     });
-
-    //check if there is a bonus
-    skatterRound = $.grep(finalArray, function(element, index){
-      return element.key == 'Panda_Scatter' && element.y == 450 || element.key == 'Panda_Scatter' && element.y == 600 || element.key == 'Panda_Scatter' && element.y == 750 ;
-    });
-
-    if ( skatterRound.length > 2) {
-        emitter.start(false, 1000, 100);
-        // video.play(true);
-
-        // //  x, y, anchor x, anchor y, scale x, scale y
-        //  video.addToWorld(0, 420, 0.1, 0.1, 1,1);
-    }
-
+    
     for (var i = 0; i < paylines.length; i++) {
         var symbol = results[paylines[i][0]][0].key;
-
-
-
         var j = 1;
         for (; j < paylines[i].length; j++) {
             var current = results[paylines[i][j]][j].key;
-
+            
             if (symbol == jolly) {
                 symbol = current;
-            } else {
+            }
+            else {
                 if (current != symbol && current != jolly)
                     break;
             }
         }
-
+        
         if (j >= 3) {
             var lineX = [];
             var lineY = [];
             var included = [];
             for (var k = 0; k < paylines[i].length; k++) {
                 var sprite = results[paylines[i][k]][k];
-
+                
                 if (k == 0) {
-                    lineX.push(sprite.x + sprite.width / 2 + 25 - 100);
-                    lineY.push(sprite.y + sprite.height / 2);
+                    lineX.push(sprite.x + sprite.width/2 + 25 - 100);
+                    lineY.push(sprite.y + sprite.height/2);
                     included.push(true);
                 }
-
-                lineX.push(sprite.x + sprite.width / 2 + 25);
-                lineY.push(sprite.y + sprite.height / 2);
+                
+                lineX.push(sprite.x + sprite.width/2 + 25);
+                lineY.push(sprite.y + sprite.height/2);
                 included.push(k < j);
-
+                
                 if (k == 4) {
-                    lineX.push(sprite.x + sprite.width / 2 + 25 + 100);
-                    lineY.push(sprite.y + sprite.height / 2);
+                    lineX.push(sprite.x + sprite.width/2 + 25 + 100);
+                    lineY.push(sprite.y + sprite.height/2);
                     included.push(k < j);
                 }
             }
-            graphics.lines.push({ x: lineX, y: lineY, included: included });
+            graphics.lines.push({x: lineX, y: lineY, included: included});
             score += Math.pow(10, j);
         }
-
     }
-
+    
     graphics.drawLines();
-    scoreText.text = 'Score: ' + score;
+    scoreText.text = 'WIN: ' + score;
     if (score > 0) updateCredits(score);
     spinning = false;
 }
 
 function updateCredits(amount) {
     if (amount > 0) winning.play();
-
+    
     credits += amount;
-    creditsText.text = 'Crediti: ' + credits;
-
-    var updateText = game.add.bitmapText(40 + creditsText.width, 405, 'kenfuture', (amount < 0 ? '' : '+') + amount, 32);
-    var updateTween = game.add.tween(updateText).to({ alpha: 0, y: updateText.y - 10 }, 1000, Phaser.Easing.Linear.InOut, true);
+    creditsText.text = 'BALANCE: ' + credits;
+    
+    var updateText = game.add.bitmapText(40 + creditsText.width, 405, 'kenfuture', (amount<0?'':'+') + amount, 32);
+    var updateTween = game.add.tween(updateText).to({alpha: 0, y: updateText.y - 10}, 1000, Phaser.Easing.Linear.InOut, true);
     updateTween.onComplete.add(function() {
         updateText.destroy();
     });
